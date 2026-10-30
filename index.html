@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinau Management - PNG Trade Stores</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Arial;padding:20px;background:#f5f5f5}
+.card{background:white;padding:15px;border-radius:10px;margin:10px 0;box-shadow:0 2px 5px #ccc}
+input,button{padding:10px;margin:5px;width:90%;border-radius:5px;border:1px solid #ccc}
+button{background:#0066cc;color:white;font-weight:bold}
+h2{color:#0066cc}
+</style>
+</head>
+<body>
+<h2>Dinau Management System</h2>
+<p>One Link - Many Shops: Eriku / Top Town / Lae Market</p>
+
+<div class="card">
+<h3>Setup Supabase</h3>
+<input id="url" placeholder="Supabase URL https://xxx.supabase.co">
+<input id="key" placeholder="Supabase anon key">
+<input id="shopId" placeholder="Shop ID 899ecce2-9fab-49b3-a633-ff3db5a70ba5" value="899ecce2-9fab-49b3-a633-ff3db5a70ba5">
+<button onclick="saveConfig()">Save & Load Customers</button>
+</div>
+
+<div class="card">
+<h3>Eriku Trade Store Customers</h3>
+<div id="customers">Tap Save first...</div>
+</div>
+
+<div class="card">
+<h3>Add New Customer (Dinau)</h3>
+<input id="custName" placeholder="Customer name e.g. Mary">
+<input id="custPhone" placeholder="Phone">
+<input id="custAmount" placeholder="Amount K" type="number">
+<button onclick="addCustomer()">Add Customer</button>
+</div>
+
+<script>
+let supabaseClient = null;
+const SHOP_ID = '899ecce2-9fab-49b3-a633-ff3db5a70ba5';
+
+function saveConfig(){
+  const url = document.getElementById('url').value;
+  const key = document.getElementById('key').value;
+  const shopId = document.getElementById('shopId').value || SHOP_ID;
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  localStorage.setItem('shop_id', shopId);
+  supabaseClient = supabase.createClient(url, key);
+  loadCustomers();
+}
+
+async function loadCustomers(){
+  const url = localStorage.getItem('sb_url') || document.getElementById('url').value;
+  const key = localStorage.getItem('sb_key') || document.getElementById('key').value;
+  const shopId = localStorage.getItem('shop_id') || SHOP_ID;
+  if(!url||!key){alert('Paste Supabase URL and anon key first! Get from Supabase App > Settings > API');return;}
+  if(!supabaseClient) supabaseClient = supabase.createClient(url, key);
+  
+  const { data, error } = await supabaseClient.from('customers').select('*, debts(amount)').eq('shop_id', shopId);
+  if(error){document.getElementById('customers').innerHTML = 'Error: '+error.message; return;}
+  let html = '';
+  data.forEach(c=>{
+    const total = c.debts ? c.debts.reduce((s,d)=>s+Number(d.amount),0) : 0;
+    html += `<div><b>${c.name}</b> - K${total} - ${c.phone||''}</div>`;
+  });
+  if(data.length===0) html = 'No customers yet. Add one below. Your test John Wam K150 will show here.';
+  if(data.length===0){ // try debts view
+    const {data:debts} = await supabaseClient.from('debts').select('*, customers(name)').eq('shop_id', shopId);
+    html += '<br>Debts:<br>'+JSON.stringify(debts);
+  }
+  document.getElementById('customers').innerHTML = html || 'No customers for this shop ID - this proves shop separation!';
+}
+
+async function addCustomer(){
+  const name = document.getElementById('custName').value;
+  const phone = document.getElementById('custPhone').value;
+  const amount = document.getElementById('custAmount').value;
+  const shopId = localStorage.getItem('shop_id') || SHOP_ID;
+  const {data:cust, error} = await supabaseClient.from('customers').insert({shop_id:shopId, name, phone}).select().single();
+  if(error){alert(error.message);return;}
+  if(amount){
+    await supabaseClient.from('debts').insert({shop_id:shopId, customer_id:cust.id, amount, description:'Initial dinau'});
+  }
+  alert('Added!'); loadCustomers();
+}
+
+window.onload = ()=>{
+  document.getElementById('url').value = localStorage.getItem('sb_url')||'';
+  document.getElementById('key').value = localStorage.getItem('sb_key')||'';
+  document.getElementById('shopId').value = localStorage.getItem('shop_id')||SHOP_ID;
+}
+</script>
+</body>
+</html>
