@@ -3,311 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dinau Management System</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto}
-body{background:#0f172a;color:#e2e8f0;min-height:100vh}
-header{background:#1e293b;padding:14px 16px;position:sticky;top:0;z-index:10;border-bottom:1px solid #334155}
-h1{font-size:18px;font-weight:800;color:#38bdf8}
-.sub{font-size:12px;color:#94a3b8;margin-top:2px}
-.container{max-width:800px;margin:0 auto;padding:12px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px;margin-bottom:12px}
-label{font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;margin-top:8px}
-input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:14px}
-button{padding:10px 14px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer}
-.btn-primary{background:#38bdf8;color:#000;width:100%;margin-top:10px}
-.btn-green{background:#22c55e;color:#000}
-.btn-orange{background:#f59e0b;color:#000}
-.btn-ghost{background:#334155;color:#e2e8f0}
-.flex{display:flex;gap:8px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.badge{font-size:11px;padding:3px 7px;border-radius:20px;font-weight:700}
-.badge-dinau{background:#fef3c7;color:#92400e}
-.badge-pay{background:#dcfce7;color:#166534}
-.balance{font-size:20px;font-weight:900}
-.balance.pos{color:#f87171}
-.balance.zero{color:#4ade80}
-.row{padding:10px 0;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
-.row:last-child{border:none}
-.hidden{display:none}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tab{flex:1;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;text-align:center;font-size:13px;font-weight:700;color:#94a3b8}
-.tab.active{background:#38bdf8;color:#000;border-color:#38bdf8}
-.search{margin-bottom:10px}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;z-index:100;padding:10px}
-.modal{background:#1e293b;border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:90vh;overflow:auto;padding:16px;border:1px solid #334155}
-@media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:16px}}
-.item-line{font-size:13px;margin-top:4px}
-.time{font-size:11px;color:#64748b}
-</style>
+<title>Dinau Management System - Top Town Lae</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>body{background:#f3f4f6}</style>
 </head>
-<body>
-<header>
-<h1>Dinau Management System</h1>
-<div class="sub">Eriku • Top Town • Lae Market — One Link</div>
-<div class="sub" id="connectionStatus">Not connected</div>
-</header>
-<div class="container">
-<div class="card" id="setupCard">
-<h3 style="font-size:14px">Setup (First Time Only)</h3>
-<label>Supabase URL</label>
-<input id="supaUrl" placeholder="https://your-project.supabase.co">
-<label>Supabase Anon Key</label>
-<input id="supaKey" placeholder="eyJ...">
-<label>Shop ID</label>
-<input id="shopId" placeholder="899ecce2-9fab-49b3-a633-ff3db5a70ba5">
-<button class="btn-primary" onclick="saveSetup()">Save & Load Customers</button>
+<body class="p-2 max-w-2xl mx-auto">
+<div class="bg-white rounded-2xl p-4 shadow mb-4">
+<h1 class="font-bold text-xl">📍 Dinau Management System - Top Town Lae</h1>
+<p class="text-sm text-gray-500">Any amount K0.01 (1 toea) to K1,000,000</p>
 </div>
-<div class="tabs">
-<div class="tab active" onclick="setTab('customers')">Customers</div>
-<div class="tab" onclick="setTab('history')">All History</div>
+
+<div id="setupCard" class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mb-4">
+<h2 class="font-bold">⚙️ Setup</h2>
+<input id="supaUrl" placeholder="https://xxxxx.supabase.co" class="w-full mt-2 p-3 border rounded-lg text-sm"/>
+<input id="supaKey" placeholder="anon key eyJ..." class="w-full mt-2 p-3 border rounded-lg text-sm"/>
+<button onclick="saveSetup()" class="w-full mt-3 bg-blue-600 text-white py-3 rounded-lg font-bold">Save & Load</button>
+<p id="setupStatus" class="text-sm text-center mt-2"></p>
 </div>
-<div class="flex search">
-<input id="search" placeholder="Search customer..." oninput="renderCustomers()">
-<button class="btn-green" onclick="openAddCustomer()">+ Customer</button>
+
+<div class="grid grid-cols-2 gap-3 mb-4">
+<div class="bg-white rounded-xl p-4 shadow"><p class="text-sm text-gray-500">Total Customers</p><p id="totalCust" class="text-3xl font-bold">0</p></div>
+<div class="bg-white rounded-xl p-4 shadow"><p class="text-sm text-gray-500">Total Outstanding</p><p id="totalOut" class="text-xl font-bold text-red-600">K 0.00</p></div>
 </div>
-<div class="card">
-<div class="flex" style="justify-content:space-between">
-<div><b id="totalCustomers">0</b> Customers • Total Outstanding</div>
-<div class="balance pos" id="totalOutstanding">K0</div>
+
+<div class="flex gap-2 mb-4">
+<input id="searchBox" oninput="filterCustomers()" placeholder="Search..." class="flex-1 p-3 bg-white rounded-full shadow border"/>
+<button onclick="openAddCustomer()" class="bg-green-600 text-white px-5 rounded-full font-bold">+ Customer</button>
 </div>
-</div>
-<div id="customersList"></div>
-<div id="historyList" class="hidden"></div>
-</div>
-<!-- Customer Detail Modal -->
-<div id="custModal" class="modal-bg hidden">
-<div class="modal">
-<div class="flex" style="justify-content:space-between;align-items:center">
-<h3 id="custName">Customer</h3>
-<button class="btn-ghost" onclick="closeCust()">X</button>
-</div>
-<div class="balance pos" id="custBalance">K0</div>
-<div class="time" id="custPhone"></div>
-<div class="grid2" style="margin-top:12px">
-<button class="btn-orange" onclick="openAddDinau()">+ Add Dinau (Item)</button>
-<button class="btn-green" onclick="openAddPay()">+ Add Payment</button>
-</div>
-<div style="margin-top:12px">
-<b style="font-size:13px">History - All Dates & Items</b>
-<div id="custTransactions" style="margin-top:8px"></div>
-</div>
-</div>
-</div>
-<!-- Add Modals -->
-<div id="addCustModal" class="modal-bg hidden"><div class="modal">
-<h3>Add Customer</h3>
-<label>Name *</label><input id="newName" placeholder="John Wam">
-<label>Phone</label><input id="newPhone" placeholder="7xxxxxxx">
-<div class="flex" style="margin-top:12px"><button class="btn-ghost" onclick="closeAddCust()">Cancel</button><button class="btn-primary" style="flex:1" onclick="saveCustomer()">Save Customer</button></div>
+
+<div id="customerList" class="space-y-3"></div>
+
+<div id="addCustomerModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50" style="display:none">
+<div class="bg-white rounded-2xl p-5 w-full max-w-sm">
+<h2 class="font-bold text-lg mb-3">Add Customer</h2>
+<input id="custName" placeholder="Name" class="w-full p-3 border rounded-lg mb-2"/>
+<input id="custPhone" placeholder="Phone" class="w-full p-3 border rounded-lg mb-3"/>
+<div class="flex gap-2"><button onclick="closeModal('addCustomerModal')" class="flex-1 py-3 bg-gray-200 rounded-lg">Cancel</button><button onclick="saveCustomer()" class="flex-1 py-3 bg-green-600 text-white rounded-lg font-bold">Save</button></div>
 </div></div>
-<div id="addDinauModal" class="modal-bg hidden"><div class="modal">
-<h3>Add Dinau - Item Taken</h3>
-<label>Item Description * (e.g., Rice 10kg + 2x Tinned Fish)</label>
-<textarea id="dinauItem" rows="2" placeholder="What item took on dinau?"></textarea>
-<label>Amount K *</label><input id="dinauAmount" type="number" placeholder="150">
-<label>Date & Time (auto now, you can change)</label><input id="dinauDate" type="datetime-local">
-<div class="flex" style="margin-top:12px"><button class="btn-ghost" onclick="closeDinau()">Cancel</button><button class="btn-primary" style="flex:1" onclick="saveDinau()">Save Dinau</button></div>
+
+<div id="addDinauModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50" style="display:none">
+<div class="bg-white rounded-2xl p-5 w-full max-w-sm">
+<h2 class="font-bold">Add Dinau - Item</h2>
+<p class="text-xs text-gray-500">K0.01 to K1,000,000 allowed</p>
+<input id="dinauItem" placeholder="Item e.g., Rice 10kg" class="w-full p-3 border rounded-lg mt-2 mb-2"/>
+<input id="dinauAmount" type="number" step="0.01" min="0.01" max="1000000" placeholder="Amount e.g., 0.01, 50, 1000000" class="w-full p-3 border rounded-lg mb-2"/>
+<input id="dinauDate" type="datetime-local" class="w-full p-3 border rounded-lg mb-3"/>
+<div class="flex gap-2"><button onclick="closeModal('addDinauModal')" class="flex-1 py-3 bg-gray-200 rounded-lg">Cancel</button><button onclick="saveDinau()" class="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold">Save Dinau</button></div>
 </div></div>
-<div id="addPayModal" class="modal-bg hidden"><div class="modal">
-<h3>Add Payment - Part Payment</h3>
-<label>Amount Paid K * (can be small, e.g., K20)</label><input id="payAmount" type="number" placeholder="20">
-<label>Note (optional)</label><input id="payNote" placeholder="Part payment, cash">
-<label>Date & Time</label><input id="payDate" type="datetime-local">
-<div class="flex" style="margin-top:12px"><button class="btn-ghost" onclick="closePay()">Cancel</button><button class="btn-primary" style="flex:1" onclick="savePay()">Save Payment</button></div>
+
+<div id="addPaymentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50" style="display:none">
+<div class="bg-slate-800 text-white rounded-2xl p-5 w-full max-w-sm">
+<h2 class="font-bold">Add Payment - Part Payment</h2>
+<p class="text-xs text-gray-300">K0.01 (1 toea) to K1,000,000 - any amount</p>
+<input id="payAmount" type="number" step="0.01" min="0.01" max="1000000" placeholder="e.g., 0.01, 20, 50" class="w-full p-3 bg-slate-900 border rounded-lg mt-2 mb-2 text-white"/>
+<input id="payNote" placeholder="Part payment / 1 toea" class="w-full p-3 bg-slate-900 border rounded-lg mb-2 text-white"/>
+<input id="payDate" type="datetime-local" class="w-full p-3 bg-slate-900 border rounded-lg mb-4 text-white"/>
+<div class="flex gap-2"><button onclick="closeModal('addPaymentModal')" class="flex-1 py-3 bg-gray-600 rounded-lg">Cancel</button><button onclick="savePayment()" class="flex-1 py-3 bg-sky-400 text-black rounded-lg font-bold">Save Payment</button></div>
 </div></div>
+
+<div id="detailModal" class="fixed inset-0 bg-white hidden flex-col z-40 overflow-auto" style="display:none">
+<div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+<button onclick="closeModal('detailModal')">← Back</button>
+<h2 id="detailName" class="font-bold"></h2>
+<div class="flex gap-1"><button onclick="openAddDinau()" class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">+ Dinau</button><button onclick="openAddPayment()" class="bg-green-600 text-white px-3 py-1 rounded-full text-sm">+ Payment</button></div>
+</div>
+<div class="p-4"><p id="detailBalance" class="text-2xl font-bold text-red-600 mb-4"></p><div id="detailHistory" class="space-y-2"></div></div>
+</div>
+
 <script>
-let supabaseUrl='',supabaseKey='',shopId='',customers=[],transactions=[],currentCustomerId=null;
-function loadSetup(){
- supabaseUrl=localStorage.getItem('supaUrl')||'';
- supabaseKey=localStorage.getItem('supaKey')||'';
- shopId=localStorage.getItem('shopId')||'899ecce2-9fab-49b3-a633-ff3db5a70ba5';
- document.getElementById('supaUrl').value=supabaseUrl;
- document.getElementById('supaKey').value=supabaseKey;
- document.getElementById('shopId').value=shopId;
-}
-loadSetup();
-
-function saveSetup(){
- supabaseUrl=document.getElementById('supaUrl').value.trim();
- supabaseKey=document.getElementById('supaKey').value.trim();
- shopId=document.getElementById('shopId').value.trim();
- localStorage.setItem('supaUrl',supabaseUrl);
- localStorage.setItem('supaKey',supabaseKey);
- localStorage.setItem('shopId',shopId);
- loadData();
-}
-
-async function supaFetch(table,query=''){
- if(!supabaseUrl||!supabaseKey) return null;
- try{
-  const res=await fetch(`${supabaseUrl}/rest/v1/${table}${query}`,{
-   headers:{'apikey':supabaseKey,'Authorization':`Bearer ${supabaseKey}`}
-  });
-  if(!res.ok) throw new Error(await res.text());
-  return await res.json();
- }catch(e){ return null; }
-}
-
-async function supaInsert(table,body){
- const res=await fetch(`${supabaseUrl}/rest/v1/${table}`,{
-  method:'POST',
-  headers:{'apikey':supabaseKey,'Authorization':`Bearer ${supabaseKey}`,'Content-Type':'application/json','Prefer':'return=representation'},
-  body:JSON.stringify(body)
- });
- if(!res.ok) throw new Error(await res.text());
- return await res.json();
-}
-
-function loadLocal(){
- customers=JSON.parse(localStorage.getItem('local_customers_'+shopId)||'[]');
- transactions=JSON.parse(localStorage.getItem('local_tx_'+shopId)||'[]');
-}
-
-function saveLocal(){
- if(supabaseUrl&&supabaseKey) return;
- localStorage.setItem('local_customers_'+shopId,JSON.stringify(customers));
- localStorage.setItem('local_tx_'+shopId,JSON.stringify(transactions));
-}
-
-async function loadData(){
- if(supabaseUrl&&supabaseKey){
-  let c=await supaFetch('dinau_customers',`?shop_id=eq.${shopId}&order=created_at.desc`);
-  let t=await supaFetch('dinau_transactions',`?shop_id=eq.${shopId}&order=created_at.desc`);
-  if(c!==null) customers=c; else loadLocal();
-  if(t!==null) transactions=t;
-  if(c===null&&t===null) loadLocal();
- }else loadLocal();
- renderCustomers();
- renderAllHistory();
-}
-loadData();
-
-function calcBalance(id){
- let bal=0;
- transactions.filter(x=>x.customer_id===id).forEach(tx=>{
-  if(tx.type==='dinau') bal+=Number(tx.amount);
-  else bal-=Number(tx.amount);
- });
- return bal;
-}
-
-function renderCustomers(){
- const q=(document.getElementById('search').value||'').toLowerCase();
- let list=customers.filter(c=>c.name.toLowerCase().includes(q));
- let totalOut=0;
- customers.forEach(c=>{ totalOut+=calcBalance(c.id); });
- document.getElementById('totalCustomers').innerText=customers.length;
- document.getElementById('totalOutstanding').innerText='K'+totalOut.toFixed(2);
- let html='';
- list.forEach(c=>{
-  let bal=calcBalance(c.id);
-  let lastTx=transactions.filter(t=>t.customer_id===c.id)[0];
-  let lastDate=lastTx?new Date(lastTx.created_at).toLocaleString():'';
-  html+=`<div class="card" onclick="openCustomer('${c.id}')"><div class="flex" style="justify-content:space-between"><div><b>${c.name}</b><div class="time">${c.phone||''} • ${lastDate}</div></div><div class="balance ${bal<=0?'zero':'pos'}">K${bal.toFixed(2)}</div></div>${lastTx?`<div style="font-size:13px;margin-top:4px">${lastTx.type==='dinau'?'📦':'💰'} ${lastTx.item||''} - K${lastTx.amount}</div>`:''}${bal<=0&&transactions.filter(t=>t.customer_id===c.id).length>0?'<span class="badge badge-pay">PAID OFF ✓</span>':bal>0?'<span class="badge badge-dinau">OWING</span>':''}</div>`;
- });
- if(!html) html='<div class="card" style="text-align:center;color:#94a3b8">No customers yet. Add one!</div>';
- document.getElementById('customersList').innerHTML=html;
-}
-
-function renderAllHistory(){
- let html='';
- transactions.slice(0,100).forEach(tx=>{
-  let cust=customers.find(c=>c.id===tx.customer_id);
-  html+=`<div class="card"><div class="flex" style="justify-content:space-between"><b>${cust?cust.name:'Unknown'}</b><span class="badge ${tx.type==='dinau'?'badge-dinau':'badge-pay'}">${tx.type.toUpperCase()}</span></div><div style="font-size:13px;margin-top:4px">${tx.item||'-'} - K${Number(tx.amount).toFixed(2)}</div><div class="time">${new Date(tx.created_at).toLocaleString()}</div></div>`;
- });
- document.getElementById('historyList').innerHTML=html||'<div class="card">No history yet</div>';
-}
-
-function setTab(t){
- document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='customers')||(i===1&&t==='history')));
- document.getElementById('customersList').classList.toggle('hidden',t!=='customers');
- document.getElementById('historyList').classList.toggle('hidden',t!=='history');
-}
-
-function openCustomer(id){
- currentCustomerId=id;
- let c=customers.find(x=>x.id===id);
- document.getElementById('custName').innerText=c.name;
- document.getElementById('custPhone').innerText=c.phone||'';
- let bal=calcBalance(id);
- document.getElementById('custBalance').innerText='Balance: K'+bal.toFixed(2)+(bal<=0?' - PAID OFF ✓':' - OWING');
- document.getElementById('custBalance').className='balance '+(bal<=0?'zero':'pos');
- let txs=transactions.filter(x=>x.customer_id===id);
- let html='';
- [...txs].reverse().forEach(tx=>{
-  html+=`<div class="row"><div><div style="font-weight:700;font-size:13px">${tx.type==='dinau'?'📦 DINAU':'💰 PAYMENT'}</div><div style="font-size:13px">${tx.item||'-'}</div><div class="time">${new Date(tx.created_at).toLocaleString()}</div></div><div style="text-align:right"><div class="balance ${tx.type==='dinau'?'pos':'zero'}" style="font-size:16px">${tx.type==='dinau'?'+':'-'}K${Number(tx.amount).toFixed(2)}</div></div></div>`;
- });
- if(!html) html='<div style="color:#94a3b8;font-size:12px">No dinau yet</div>';
- document.getElementById('custTransactions').innerHTML=html;
- document.getElementById('custModal').classList.remove('hidden');
-}
-
-function closeCust(){ document.getElementById('custModal').classList.add('hidden'); }
-function openAddCustomer(){ document.getElementById('addCustModal').classList.remove('hidden'); }
-function closeAddCust(){ document.getElementById('addCustModal').classList.add('hidden'); }
-
-async function saveCustomer(){
- let name=document.getElementById('newName').value.trim();
- let phone=document.getElementById('newPhone').value.trim();
- if(!name) return alert('Name required');
- let newCust={id:(crypto.randomUUID?crypto.randomUUID():Date.now().toString()),name,phone,shop_id:shopId,created_at:new Date().toISOString()};
- if(supabaseUrl&&supabaseKey){
-  try{ let res=await supaInsert('dinau_customers',{name,phone,shop_id:shopId}); newCust=res[0]; }catch(e){ alert('Supabase error: '+e.message); }
- }
- customers.unshift(newCust);
- saveLocal();
- closeAddCust();
- document.getElementById('newName').value='';
- document.getElementById('newPhone').value='';
- renderCustomers();
-}
-
-function openAddDinau(){
- document.getElementById('dinauDate').value=new Date().toISOString().slice(0,16);
- document.getElementById('addDinauModal').classList.remove('hidden');
-}
-function closeDinau(){ document.getElementById('addDinauModal').classList.add('hidden'); }
-
-async function saveDinau(){
- let item=document.getElementById('dinauItem').value.trim();
- let amount=Number(document.getElementById('dinauAmount').value);
- let date=document.getElementById('dinauDate').value?new Date(document.getElementById('dinauDate').value).toISOString():new Date().toISOString();
- if(!item||!amount) return alert('Item and Amount required');
- let tx={id:(crypto.randomUUID?crypto.randomUUID():Date.now().toString()),customer_id:currentCustomerId,shop_id:shopId,item,amount,type:'dinau',created_at:date};
- if(supabaseUrl&&supabaseKey){
-  try{ let res=await supaInsert('dinau_transactions',{customer_id:currentCustomerId,shop_id:shopId,item,amount,type:'dinau',created_at:date}); tx=res[0]; }catch(e){}
- }
- transactions.unshift(tx);
- saveLocal();
- closeDinau();
- openCustomer(currentCustomerId);
- renderCustomers();
- renderAllHistory();
-}
-
-function openAddPay(){
- document.getElementById('payDate').value=new Date().toISOString().slice(0,16);
- document.getElementById('addPayModal').classList.remove('hidden');
-}
-function closePay(){ document.getElementById('addPayModal').classList.add('hidden'); }
-
-async function savePay(){
- let amount=Number(document.getElementById('payAmount').value);
- let note=document.getElementById('payNote').value.trim()||'Part payment';
- let date=document.getElementById('payDate').value?new Date(document.getElementById('payDate').value).toISOString():new Date().toISOString();
- if(!amount) return alert('Amount required');
- let tx={id:(crypto.randomUUID?crypto.randomUUID():Date.now().toString()),customer_id:currentCustomerId,shop_id:shopId,item:note,amount,type:'payment',created_at:date};
- if(supabaseUrl&&supabaseKey){
-  try{ let res=await supaInsert('dinau_transactions',{customer_id:currentCustomerId,shop_id:shopId,item:note,amount,type:'payment',created_at:date}); tx=res[0]; }catch(e){}
- }
- transactions.unshift(tx);
- saveLocal();
- closePay();
- openCustomer(currentCustomerId);
- renderCustomers();
- renderAllHistory();
-}
+let supabaseClient=null,customers=[],transactions=[],currentCustomerId=null;
+function saveSetup(){const u=document.getElementById('supaUrl').value.trim(),k=document.getElementById('supaKey').value.trim();if(!u||!k){alert('Paste both');return;}localStorage.setItem('supaUrl',u);localStorage.setItem('supaKey',k);location.reload();}
+window.onload=function(){const u=localStorage.getItem('supaUrl'),k=localStorage.getItem('supaKey');if(u)document.getElementById('supaUrl').value=u;if(k)document.getElementById('supaKey').value=k;if(u&&k){supabaseClient=window.supabase.createClient(u,k);loadAll();document.getElementById('setupCard').style.display='none';}const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());const s=n.toISOString().slice(0,16);document.getElementById('dinauDate').value=s;document.getElementById('payDate').value=s;}
+async function loadAll(){try{const {data:c}=await supabaseClient.from('customers').select('*').order('created_at',{ascending:false});const {data:t}=await supabaseClient.from('dinau_transactions').select('*').order('date_time',{ascending:true});customers=c||[];transactions=t||[];renderCustomers();}catch(e){alert(e.message);}}
+function getBalance(id){let b=0;transactions.filter(t=>t.customer_id===id).forEach(t=>{if(t.type==='dinau')b+=parseFloat(t.amount);else b-=parseFloat(t.amount);});return b;}
+function renderCustomers(){const q=(document.getElementById('searchBox').value||'').toLowerCase();const list=document.getElementById('customerList');let total=0;list.innerHTML='';customers.filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>{const bal=getBalance(c.id);total+=bal;const badge=bal<=0.001?'<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">PAID OFF ✓</span>':'<span class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full">Outstanding</span>';list.innerHTML+=`<div onclick="openDetail('${c.id}')" class="bg-white rounded-2xl p-4 shadow flex justify-between cursor-pointer"><div><p class="font-bold">${c.name}</p><p class="text-sm text-gray-500">${c.phone||''}</p><p class="text-sm">Balance: <b class="${bal>0?'text-red-600':''}">K ${bal.toFixed(2)}</b></p></div><div>${badge}</div></div>`;});document.getElementById('totalCust').innerText=customers.length;document.getElementById('totalOut').innerText='K '+total.toFixed(2);}
+function filterCustomers(){renderCustomers();}
+function openAddCustomer(){document.getElementById('addCustomerModal').style.display='flex';}
+function openAddDinau(){const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());document.getElementById('dinauDate').value=n.toISOString().slice(0,16);document.getElementById('addDinauModal').style.display='flex';}
+function openAddPayment(){const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());document.getElementById('payDate').value=n.toISOString().slice(0,16);document.getElementById('addPaymentModal').style.display='flex';}
+function closeModal(id){document.getElementById(id).style.display='none';}
+async function saveCustomer(){const name=document.getElementById('custName').value.trim(),phone=document.getElementById('custPhone').value.trim();if(!name){alert('Enter name');return;}const {error}=await supabaseClient.from('customers').insert({name,phone});if(error){alert(error.message);return;}closeModal('addCustomerModal');document.getElementById('custName').value='';await loadAll();}
+function openDetail(cid){currentCustomerId=cid;const c=customers.find(x=>x.id===cid);document.getElementById('detailName').innerText=c.name;const bal=getBalance(cid);document.getElementById('detailBalance').innerText='Balance: K '+bal.toFixed(2)+(bal<=0.001?' PAID OFF ✓':' OWING');const hist=document.getElementById('detailHistory');const trans=transactions.filter(x=>x.customer_id===cid);hist.innerHTML='';trans.forEach(t=>{const d=new Date(t.date_time).toLocaleString();if(t.type==='dinau')hist.innerHTML+=`<div class="border p-3 rounded-xl">📦 DINAU - ${t.item} - +K${parseFloat(t.amount).toFixed(2)}<br><small>${d}</small></div>`;else hist.innerHTML+=`<div class="border p-3 rounded-xl bg-green-50">💰 PAYMENT - ${t.note} - -K${parseFloat(t.amount).toFixed(2)}<br><small>${d}</small></div>`;});document.getElementById('detailModal').style.display='flex';}
+async function saveDinau(){if(!currentCustomerId){alert('Select customer');return;}const item=document.getElementById('dinauItem').value.trim()||'Item',amount=parseFloat(document.getElementById('dinauAmount').value),dt=document.getElementById('dinauDate').value;if(isNaN(amount)||amount<0.01||amount>1000000){alert('Enter amount from K0.01 (1 toea) to K1,000,000');return;}const {error}=await supabaseClient.from('dinau_transactions').insert({customer_id:currentCustomerId,type:'dinau',amount,item,date_time:dt?new Date(dt).toISOString():new Date().toISOString()});if(error){alert(error.message);return;}closeModal('addDinauModal');document.getElementById('dinauItem').value='';document.getElementById('dinauAmount').value='';await loadAll();openDetail(currentCustomerId);}
+async function savePayment(){if(!currentCustomerId){alert('Select customer');return;}const amount=parseFloat(document.getElementById('payAmount').value),note=document.getElementById('payNote').value.trim()||'Part payment',dt=document.getElementById('payDate').value;if(isNaN(amount)||amount<0.01||amount>1000000){alert('Enter amount from K0.01 (1 toea) to K1,000,000');return;}const {error}=await supabaseClient.from('dinau_transactions').insert({customer_id:currentCustomerId,type:'payment',amount,note,date_time:dt?new Date(dt).toISOString():new Date().toISOString()});if(error){alert(error.message);return;}closeModal('addPaymentModal');document.getElementById('payAmount').value='';await loadAll();openDetail(currentCustomerId);alert('Payment K'+amount.toFixed(2)+' saved!');}
 </script>
 </body>
 </html>
