@@ -1,97 +1,312 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dinau Management - PNG Trade Stores</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Dinau Management System</title>
 <style>
-body{font-family:Arial;padding:20px;background:#f5f5f5}
-.card{background:white;padding:15px;border-radius:10px;margin:10px 0;box-shadow:0 2px 5px #ccc}
-input,button{padding:10px;margin:5px;width:90%;border-radius:5px;border:1px solid #ccc}
-button{background:#0066cc;color:white;font-weight:bold}
-h2{color:#0066cc}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto}
+body{background:#0f172a;color:#e2e8f0;min-height:100vh}
+header{background:#1e293b;padding:14px 16px;position:sticky;top:0;z-index:10;border-bottom:1px solid #334155}
+h1{font-size:18px;font-weight:800;color:#38bdf8}
+.sub{font-size:12px;color:#94a3b8;margin-top:2px}
+.container{max-width:800px;margin:0 auto;padding:12px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px;margin-bottom:12px}
+label{font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;margin-top:8px}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:14px}
+button{padding:10px 14px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer}
+.btn-primary{background:#38bdf8;color:#000;width:100%;margin-top:10px}
+.btn-green{background:#22c55e;color:#000}
+.btn-orange{background:#f59e0b;color:#000}
+.btn-ghost{background:#334155;color:#e2e8f0}
+.flex{display:flex;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.badge{font-size:11px;padding:3px 7px;border-radius:20px;font-weight:700}
+.badge-dinau{background:#fef3c7;color:#92400e}
+.badge-pay{background:#dcfce7;color:#166534}
+.balance{font-size:20px;font-weight:900}
+.balance.pos{color:#f87171}
+.balance.zero{color:#4ade80}
+.row{padding:10px 0;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
+.row:last-child{border:none}
+.hidden{display:none}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;text-align:center;font-size:13px;font-weight:700;color:#94a3b8}
+.tab.active{background:#38bdf8;color:#000;border-color:#38bdf8}
+.search{margin-bottom:10px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;z-index:100;padding:10px}
+.modal{background:#1e293b;border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:90vh;overflow:auto;padding:16px;border:1px solid #334155}
+@media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:16px}}
+.item-line{font-size:13px;margin-top:4px}
+.time{font-size:11px;color:#64748b}
 </style>
 </head>
 <body>
-<h2>Dinau Management System</h2>
-<p>One Link - Many Shops: Eriku / Top Town / Lae Market</p>
-
-<div class="card">
-<h3>Setup Supabase</h3>
-<input id="url" placeholder="Supabase URL https://xxx.supabase.co">
-<input id="key" placeholder="Supabase anon key">
-<input id="shopId" placeholder="Shop ID 899ecce2-9fab-49b3-a633-ff3db5a70ba5" value="899ecce2-9fab-49b3-a633-ff3db5a70ba5">
-<button onclick="saveConfig()">Save & Load Customers</button>
+<header>
+<h1>Dinau Management System</h1>
+<div class="sub">Eriku • Top Town • Lae Market — One Link</div>
+<div class="sub" id="connectionStatus">Not connected</div>
+</header>
+<div class="container">
+<div class="card" id="setupCard">
+<h3 style="font-size:14px">Setup (First Time Only)</h3>
+<label>Supabase URL</label>
+<input id="supaUrl" placeholder="https://your-project.supabase.co">
+<label>Supabase Anon Key</label>
+<input id="supaKey" placeholder="eyJ...">
+<label>Shop ID</label>
+<input id="shopId" placeholder="899ecce2-9fab-49b3-a633-ff3db5a70ba5">
+<button class="btn-primary" onclick="saveSetup()">Save & Load Customers</button>
 </div>
-
-<div class="card">
-<h3>Eriku Trade Store Customers</h3>
-<div id="customers">Tap Save first...</div>
+<div class="tabs">
+<div class="tab active" onclick="setTab('customers')">Customers</div>
+<div class="tab" onclick="setTab('history')">All History</div>
 </div>
-
-<div class="card">
-<h3>Add New Customer (Dinau)</h3>
-<input id="custName" placeholder="Customer name e.g. Mary">
-<input id="custPhone" placeholder="Phone">
-<input id="custAmount" placeholder="Amount K" type="number">
-<button onclick="addCustomer()">Add Customer</button>
+<div class="flex search">
+<input id="search" placeholder="Search customer..." oninput="renderCustomers()">
+<button class="btn-green" onclick="openAddCustomer()">+ Customer</button>
 </div>
-
+<div class="card">
+<div class="flex" style="justify-content:space-between">
+<div><b id="totalCustomers">0</b> Customers • Total Outstanding</div>
+<div class="balance pos" id="totalOutstanding">K0</div>
+</div>
+</div>
+<div id="customersList"></div>
+<div id="historyList" class="hidden"></div>
+</div>
+<!-- Customer Detail Modal -->
+<div id="custModal" class="modal-bg hidden">
+<div class="modal">
+<div class="flex" style="justify-content:space-between;align-items:center">
+<h3 id="custName">Customer</h3>
+<button class="btn-ghost" onclick="closeCust()">X</button>
+</div>
+<div class="balance pos" id="custBalance">K0</div>
+<div class="time" id="custPhone"></div>
+<div class="grid2" style="margin-top:12px">
+<button class="btn-orange" onclick="openAddDinau()">+ Add Dinau (Item)</button>
+<button class="btn-green" onclick="openAddPay()">+ Add Payment</button>
+</div>
+<div style="margin-top:12px">
+<b style="font-size:13px">History - All Dates & Items</b>
+<div id="custTransactions" style="margin-top:8px"></div>
+</div>
+</div>
+</div>
+<!-- Add Modals -->
+<div id="addCustModal" class="modal-bg hidden"><div class="modal">
+<h3>Add Customer</h3>
+<label>Name *</label><input id="newName" placeholder="John Wam">
+<label>Phone</label><input id="newPhone" placeholder="7xxxxxxx">
+<div class="flex" style="margin-top:12px"><button class="btn-ghost" onclick="closeAddCust()">Cancel</button><button class="btn-primary" style="flex:1" onclick="saveCustomer()">Save Customer</button></div>
+</div></div>
+<div id="addDinauModal" class="modal-bg hidden"><div class="modal">
+<h3>Add Dinau - Item Taken</h3>
+<label>Item Description * (e.g., Rice 10kg + 2x Tinned Fish)</label>
+<textarea id="dinauItem" rows="2" placeholder="What item took on dinau?"></textarea>
+<label>Amount K *</label><input id="dinauAmount" type="number" placeholder="150">
+<label>Date & Time (auto now, you can change)</label><input id="dinauDate" type="datetime-local">
+<div class="flex" style="margin-top:12px"><button class="btn-ghost" onclick="closeDinau()">Cancel</button><button class="btn-primary" style="flex:1" onclick="saveDinau()">Save Dinau</button></div>
+</div></div>
+<div id="addPayModal" class="modal-bg hidden"><div class="modal">
+<h3>Add Payment - Part Payment</h3>
+<label>Amount Paid K * (can be small, e.g., K20)</label><input id="payAmount" type="number" placeholder="20">
+<label>Note (optional)</label><input id="payNote" placeholder="Part payment, cash">
+<label>Date & Time</label><input id="payDate" type="datetime-local">
+<div class="flex" style="margin-top:12px"><button class="btn-ghost" onclick="closePay()">Cancel</button><button class="btn-primary" style="flex:1" onclick="savePay()">Save Payment</button></div>
+</div></div>
 <script>
-let supabaseClient = null;
-const SHOP_ID = '899ecce2-9fab-49b3-a633-ff3db5a70ba5';
+let supabaseUrl='',supabaseKey='',shopId='',customers=[],transactions=[],currentCustomerId=null;
+function loadSetup(){
+ supabaseUrl=localStorage.getItem('supaUrl')||'';
+ supabaseKey=localStorage.getItem('supaKey')||'';
+ shopId=localStorage.getItem('shopId')||'899ecce2-9fab-49b3-a633-ff3db5a70ba5';
+ document.getElementById('supaUrl').value=supabaseUrl;
+ document.getElementById('supaKey').value=supabaseKey;
+ document.getElementById('shopId').value=shopId;
+}
+loadSetup();
 
-function saveConfig(){
-  const url = document.getElementById('url').value;
-  const key = document.getElementById('key').value;
-  const shopId = document.getElementById('shopId').value || SHOP_ID;
-  localStorage.setItem('sb_url', url);
-  localStorage.setItem('sb_key', key);
-  localStorage.setItem('shop_id', shopId);
-  supabaseClient = supabase.createClient(url, key);
-  loadCustomers();
+function saveSetup(){
+ supabaseUrl=document.getElementById('supaUrl').value.trim();
+ supabaseKey=document.getElementById('supaKey').value.trim();
+ shopId=document.getElementById('shopId').value.trim();
+ localStorage.setItem('supaUrl',supabaseUrl);
+ localStorage.setItem('supaKey',supabaseKey);
+ localStorage.setItem('shopId',shopId);
+ loadData();
 }
 
-async function loadCustomers(){
-  const url = localStorage.getItem('sb_url') || document.getElementById('url').value;
-  const key = localStorage.getItem('sb_key') || document.getElementById('key').value;
-  const shopId = localStorage.getItem('shop_id') || SHOP_ID;
-  if(!url||!key){alert('Paste Supabase URL and anon key first! Get from Supabase App > Settings > API');return;}
-  if(!supabaseClient) supabaseClient = supabase.createClient(url, key);
-  
-  const { data, error } = await supabaseClient.from('customers').select('*, debts(amount)').eq('shop_id', shopId);
-  if(error){document.getElementById('customers').innerHTML = 'Error: '+error.message; return;}
-  let html = '';
-  data.forEach(c=>{
-    const total = c.debts ? c.debts.reduce((s,d)=>s+Number(d.amount),0) : 0;
-    html += `<div><b>${c.name}</b> - K${total} - ${c.phone||''}</div>`;
+async function supaFetch(table,query=''){
+ if(!supabaseUrl||!supabaseKey) return null;
+ try{
+  const res=await fetch(`${supabaseUrl}/rest/v1/${table}${query}`,{
+   headers:{'apikey':supabaseKey,'Authorization':`Bearer ${supabaseKey}`}
   });
-  if(data.length===0) html = 'No customers yet. Add one below. Your test John Wam K150 will show here.';
-  if(data.length===0){ // try debts view
-    const {data:debts} = await supabaseClient.from('debts').select('*, customers(name)').eq('shop_id', shopId);
-    html += '<br>Debts:<br>'+JSON.stringify(debts);
-  }
-  document.getElementById('customers').innerHTML = html || 'No customers for this shop ID - this proves shop separation!';
+  if(!res.ok) throw new Error(await res.text());
+  return await res.json();
+ }catch(e){ return null; }
 }
 
-async function addCustomer(){
-  const name = document.getElementById('custName').value;
-  const phone = document.getElementById('custPhone').value;
-  const amount = document.getElementById('custAmount').value;
-  const shopId = localStorage.getItem('shop_id') || SHOP_ID;
-  const {data:cust, error} = await supabaseClient.from('customers').insert({shop_id:shopId, name, phone}).select().single();
-  if(error){alert(error.message);return;}
-  if(amount){
-    await supabaseClient.from('debts').insert({shop_id:shopId, customer_id:cust.id, amount, description:'Initial dinau'});
-  }
-  alert('Added!'); loadCustomers();
+async function supaInsert(table,body){
+ const res=await fetch(`${supabaseUrl}/rest/v1/${table}`,{
+  method:'POST',
+  headers:{'apikey':supabaseKey,'Authorization':`Bearer ${supabaseKey}`,'Content-Type':'application/json','Prefer':'return=representation'},
+  body:JSON.stringify(body)
+ });
+ if(!res.ok) throw new Error(await res.text());
+ return await res.json();
 }
 
-window.onload = ()=>{
-  document.getElementById('url').value = localStorage.getItem('sb_url')||'';
-  document.getElementById('key').value = localStorage.getItem('sb_key')||'';
-  document.getElementById('shopId').value = localStorage.getItem('shop_id')||SHOP_ID;
+function loadLocal(){
+ customers=JSON.parse(localStorage.getItem('local_customers_'+shopId)||'[]');
+ transactions=JSON.parse(localStorage.getItem('local_tx_'+shopId)||'[]');
+}
+
+function saveLocal(){
+ if(supabaseUrl&&supabaseKey) return;
+ localStorage.setItem('local_customers_'+shopId,JSON.stringify(customers));
+ localStorage.setItem('local_tx_'+shopId,JSON.stringify(transactions));
+}
+
+async function loadData(){
+ if(supabaseUrl&&supabaseKey){
+  let c=await supaFetch('dinau_customers',`?shop_id=eq.${shopId}&order=created_at.desc`);
+  let t=await supaFetch('dinau_transactions',`?shop_id=eq.${shopId}&order=created_at.desc`);
+  if(c!==null) customers=c; else loadLocal();
+  if(t!==null) transactions=t;
+  if(c===null&&t===null) loadLocal();
+ }else loadLocal();
+ renderCustomers();
+ renderAllHistory();
+}
+loadData();
+
+function calcBalance(id){
+ let bal=0;
+ transactions.filter(x=>x.customer_id===id).forEach(tx=>{
+  if(tx.type==='dinau') bal+=Number(tx.amount);
+  else bal-=Number(tx.amount);
+ });
+ return bal;
+}
+
+function renderCustomers(){
+ const q=(document.getElementById('search').value||'').toLowerCase();
+ let list=customers.filter(c=>c.name.toLowerCase().includes(q));
+ let totalOut=0;
+ customers.forEach(c=>{ totalOut+=calcBalance(c.id); });
+ document.getElementById('totalCustomers').innerText=customers.length;
+ document.getElementById('totalOutstanding').innerText='K'+totalOut.toFixed(2);
+ let html='';
+ list.forEach(c=>{
+  let bal=calcBalance(c.id);
+  let lastTx=transactions.filter(t=>t.customer_id===c.id)[0];
+  let lastDate=lastTx?new Date(lastTx.created_at).toLocaleString():'';
+  html+=`<div class="card" onclick="openCustomer('${c.id}')"><div class="flex" style="justify-content:space-between"><div><b>${c.name}</b><div class="time">${c.phone||''} • ${lastDate}</div></div><div class="balance ${bal<=0?'zero':'pos'}">K${bal.toFixed(2)}</div></div>${lastTx?`<div style="font-size:13px;margin-top:4px">${lastTx.type==='dinau'?'📦':'💰'} ${lastTx.item||''} - K${lastTx.amount}</div>`:''}${bal<=0&&transactions.filter(t=>t.customer_id===c.id).length>0?'<span class="badge badge-pay">PAID OFF ✓</span>':bal>0?'<span class="badge badge-dinau">OWING</span>':''}</div>`;
+ });
+ if(!html) html='<div class="card" style="text-align:center;color:#94a3b8">No customers yet. Add one!</div>';
+ document.getElementById('customersList').innerHTML=html;
+}
+
+function renderAllHistory(){
+ let html='';
+ transactions.slice(0,100).forEach(tx=>{
+  let cust=customers.find(c=>c.id===tx.customer_id);
+  html+=`<div class="card"><div class="flex" style="justify-content:space-between"><b>${cust?cust.name:'Unknown'}</b><span class="badge ${tx.type==='dinau'?'badge-dinau':'badge-pay'}">${tx.type.toUpperCase()}</span></div><div style="font-size:13px;margin-top:4px">${tx.item||'-'} - K${Number(tx.amount).toFixed(2)}</div><div class="time">${new Date(tx.created_at).toLocaleString()}</div></div>`;
+ });
+ document.getElementById('historyList').innerHTML=html||'<div class="card">No history yet</div>';
+}
+
+function setTab(t){
+ document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='customers')||(i===1&&t==='history')));
+ document.getElementById('customersList').classList.toggle('hidden',t!=='customers');
+ document.getElementById('historyList').classList.toggle('hidden',t!=='history');
+}
+
+function openCustomer(id){
+ currentCustomerId=id;
+ let c=customers.find(x=>x.id===id);
+ document.getElementById('custName').innerText=c.name;
+ document.getElementById('custPhone').innerText=c.phone||'';
+ let bal=calcBalance(id);
+ document.getElementById('custBalance').innerText='Balance: K'+bal.toFixed(2)+(bal<=0?' - PAID OFF ✓':' - OWING');
+ document.getElementById('custBalance').className='balance '+(bal<=0?'zero':'pos');
+ let txs=transactions.filter(x=>x.customer_id===id);
+ let html='';
+ [...txs].reverse().forEach(tx=>{
+  html+=`<div class="row"><div><div style="font-weight:700;font-size:13px">${tx.type==='dinau'?'📦 DINAU':'💰 PAYMENT'}</div><div style="font-size:13px">${tx.item||'-'}</div><div class="time">${new Date(tx.created_at).toLocaleString()}</div></div><div style="text-align:right"><div class="balance ${tx.type==='dinau'?'pos':'zero'}" style="font-size:16px">${tx.type==='dinau'?'+':'-'}K${Number(tx.amount).toFixed(2)}</div></div></div>`;
+ });
+ if(!html) html='<div style="color:#94a3b8;font-size:12px">No dinau yet</div>';
+ document.getElementById('custTransactions').innerHTML=html;
+ document.getElementById('custModal').classList.remove('hidden');
+}
+
+function closeCust(){ document.getElementById('custModal').classList.add('hidden'); }
+function openAddCustomer(){ document.getElementById('addCustModal').classList.remove('hidden'); }
+function closeAddCust(){ document.getElementById('addCustModal').classList.add('hidden'); }
+
+async function saveCustomer(){
+ let name=document.getElementById('newName').value.trim();
+ let phone=document.getElementById('newPhone').value.trim();
+ if(!name) return alert('Name required');
+ let newCust={id:(crypto.randomUUID?crypto.randomUUID():Date.now().toString()),name,phone,shop_id:shopId,created_at:new Date().toISOString()};
+ if(supabaseUrl&&supabaseKey){
+  try{ let res=await supaInsert('dinau_customers',{name,phone,shop_id:shopId}); newCust=res[0]; }catch(e){ alert('Supabase error: '+e.message); }
+ }
+ customers.unshift(newCust);
+ saveLocal();
+ closeAddCust();
+ document.getElementById('newName').value='';
+ document.getElementById('newPhone').value='';
+ renderCustomers();
+}
+
+function openAddDinau(){
+ document.getElementById('dinauDate').value=new Date().toISOString().slice(0,16);
+ document.getElementById('addDinauModal').classList.remove('hidden');
+}
+function closeDinau(){ document.getElementById('addDinauModal').classList.add('hidden'); }
+
+async function saveDinau(){
+ let item=document.getElementById('dinauItem').value.trim();
+ let amount=Number(document.getElementById('dinauAmount').value);
+ let date=document.getElementById('dinauDate').value?new Date(document.getElementById('dinauDate').value).toISOString():new Date().toISOString();
+ if(!item||!amount) return alert('Item and Amount required');
+ let tx={id:(crypto.randomUUID?crypto.randomUUID():Date.now().toString()),customer_id:currentCustomerId,shop_id:shopId,item,amount,type:'dinau',created_at:date};
+ if(supabaseUrl&&supabaseKey){
+  try{ let res=await supaInsert('dinau_transactions',{customer_id:currentCustomerId,shop_id:shopId,item,amount,type:'dinau',created_at:date}); tx=res[0]; }catch(e){}
+ }
+ transactions.unshift(tx);
+ saveLocal();
+ closeDinau();
+ openCustomer(currentCustomerId);
+ renderCustomers();
+ renderAllHistory();
+}
+
+function openAddPay(){
+ document.getElementById('payDate').value=new Date().toISOString().slice(0,16);
+ document.getElementById('addPayModal').classList.remove('hidden');
+}
+function closePay(){ document.getElementById('addPayModal').classList.add('hidden'); }
+
+async function savePay(){
+ let amount=Number(document.getElementById('payAmount').value);
+ let note=document.getElementById('payNote').value.trim()||'Part payment';
+ let date=document.getElementById('payDate').value?new Date(document.getElementById('payDate').value).toISOString():new Date().toISOString();
+ if(!amount) return alert('Amount required');
+ let tx={id:(crypto.randomUUID?crypto.randomUUID():Date.now().toString()),customer_id:currentCustomerId,shop_id:shopId,item:note,amount,type:'payment',created_at:date};
+ if(supabaseUrl&&supabaseKey){
+  try{ let res=await supaInsert('dinau_transactions',{customer_id:currentCustomerId,shop_id:shopId,item:note,amount,type:'payment',created_at:date}); tx=res[0]; }catch(e){}
+ }
+ transactions.unshift(tx);
+ saveLocal();
+ closePay();
+ openCustomer(currentCustomerId);
+ renderCustomers();
+ renderAllHistory();
 }
 </script>
 </body>
